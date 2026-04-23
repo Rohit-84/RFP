@@ -1,0 +1,757 @@
+// ------------------------------------------
+// SESSION HANDLING
+// ------------------------------------------
+function uuid() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+/**
+ * LOCAL FIX: Changed localStorage to sessionStorage.
+ * This ensures that every new tab gets its own unique Session ID,
+ * preventing chat history from mixing across multiple tabs.
+ */
+let SESSION_ID = sessionStorage.getItem("chat_session_id") || uuid();
+sessionStorage.setItem("chat_session_id", SESSION_ID);
+//  ADD THIS LINE: Track the current chat title
+let CURRENT_TITLE = "New Chat";
+
+// ------------------------------------------
+// DOM ELEMENTS
+// ------------------------------------------
+const elChat = document.getElementById("chat");
+const elPrompt = document.getElementById("prompt");
+const elSend = document.getElementById("send");
+const elNewChat = document.getElementById("newChatBtn");
+const elHistoryBtn = document.getElementById("historyBtn");
+
+// ------------------------------------------
+// COPILOT BIG GREETING LOGIC (DYNAMIC & RANDOM)
+// ------------------------------------------
+function setCopilotGreeting() {
+  const email = localStorage.getItem("userEmail") || "";
+  let firstName = "there"; // Default fallback if no name is found
+
+  // Extract and capitalize the first name from the email
+  if (email && email.includes("@")) {
+    const namePart = email.split("@")[0].split(".")[0]; 
+    firstName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+  }
+
+  // Your list of custom greetings
+  const greetings = [
+    "Hey [Name]! Ready to build your next great deck?",
+    "Hi [Name]! What should we dive into today?",
+    "Hi [Name]! Ready to get started?",
+    "Hey [Name]! How can I help you today?",
+    "Hey [Name]! Let's get things done. How can I help?",
+    "Hey [Name]! nice to see you. What’s new?", 
+    "Hey [Name]! What shall we create today?",
+    "Welcome back, [Name]! Where should we start?"
+  ];
+
+  // Pick a random greeting from the list
+  const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+  // Swap out the "[Name]" placeholder with the actual name
+  const finalGreeting = randomGreeting.replace("[Name]", firstName);
+
+  // Inject it into the HTML
+  const greetingEl = document.getElementById('copilotGreeting');
+  if (greetingEl) {
+    greetingEl.innerText = finalGreeting;
+  }
+}
+
+// ------------------------------------------
+// DATE / TIME FORMATTER
+// ------------------------------------------
+function formatDateTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+
+  const isToday =
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
+
+  const datePart = isToday
+    ? "Today"
+    : d.toLocaleDateString(undefined, { day: "2-digit", month: "short" });
+
+  const timePart = d.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  return `${datePart} • ${timePart}`;
+}
+
+// ------------------------------------------
+// UI HELPERS
+// ------------------------------------------
+
+
+// ------------------------------------------
+// DYNAMIC GREETING LOGIC
+// ------------------------------------------
+function getWelcomeMessage() {
+  const email = localStorage.getItem("userEmail") || "";
+  let firstName = "";
+
+  if (email && email.includes("@")) {
+    // Extracts the first name part before the dot and the @ symbol
+    const namePart = email.split("@")[0].split(".")[0]; 
+    // Capitalizes the first letter
+    firstName = " " + namePart.charAt(0).toUpperCase() + namePart.slice(1);
+  }
+
+  // Returns the personalized string
+  return `Hello${firstName}! I can help you with general questions or assist in creating a business presentation or document.`;
+}
+
+function scrollToBottom() {
+  const stage = document.querySelector(".stage");
+  if (stage) stage.scrollTop = stage.scrollHeight;
+}
+
+function clearChat() {
+  elChat.innerHTML = "";
+  updateInputPosition(); 
+}
+
+// ------------------------------------------
+// INPUT BOX POSITION TOGGLE
+// ------------------------------------------
+function updateInputPosition() {
+  const msgCount = document.querySelectorAll('#chat .msg').length;
+  
+  //  THE FIX: Changed from (msgCount <= 1) to (msgCount === 0)
+  if (msgCount === 0) {
+    // 0 messages: Keep input in the middle on the home screen
+    document.body.classList.add('centered-dock');
+  } else {
+    // User sent a message: Reveal the chat and move input to the bottom instantly!
+    document.body.classList.remove('centered-dock');
+  }
+}
+
+// ------------------------------------------
+// MESSAGE RENDER (WITH PPT DOWNLOAD & TIMESTAMP)
+// ------------------------------------------
+// Add generationTime = null to the very end of function arguments
+function addMsg(role, mdText, fileName = null, ts = null, generationTime= null) {
+  const row = document.createElement("div");
+  row.className = "msg " + (role === "user" ? "user" : "assistant");
+
+  const inner = document.createElement("div");
+  inner.className = "msg-inner";
+
+  const ava = document.createElement("div");
+  ava.className = "avatar";
+  const img = document.createElement("img");
+  img.src = role === "assistant" ? "/static/bot.png" : "/static/user.png";
+  ava.appendChild(img);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "bubble-wrapper";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+
+  try {
+    bubble.innerHTML = DOMPurify.sanitize(marked.parse(mdText || "")).trim();
+  } catch {
+    bubble.textContent = mdText || "";
+  }
+
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "copy-btn";
+  copyBtn.innerHTML = "⧉";
+  copyBtn.onclick = () => {
+    // Copy the text to the clipboard
+    navigator.clipboard.writeText(bubble.innerText.trim()).then(() => {
+      // Show a checkmark for 2 seconds so the user knows it worked
+      copyBtn.innerHTML = "✓";
+      setTimeout(() => {
+        copyBtn.innerHTML = "⧉";
+      }, 2000);
+    }).catch(err => {
+      console.error("Failed to copy text: ", err);
+    });
+  };
+
+  wrapper.appendChild(bubble);
+  wrapper.appendChild(copyBtn);
+//NEW : Ripped out localStorage, now using server's generationTime
+if (role === "assistant" && fileName) {
+    const btn = document.createElement("a");
+    btn.href = `/download/${encodeURIComponent(fileName)}`;
+    btn.className = "download-btn";
+    btn.innerText = "⬇ Download PPT";
+    btn.setAttribute("download", fileName);
+    wrapper.appendChild(btn);
+    
+    if (generationTime) {
+      const timeLabel = document.createElement("span");
+      timeLabel.className = "msg-time";
+      timeLabel.innerText = "Deck Generation Time: " + generationTime;
+      timeLabel.style.marginLeft = "12px";
+      timeLabel.style.opacity = "1";
+      timeLabel.style.position = "static";
+      wrapper.appendChild(timeLabel);
+    }
+  }
+  
+  //  NEW: ADDING THE TIMESTAMP
+  const timeDiv = document.createElement("div");
+  timeDiv.className = "msg-time";
+  // If a timestamp wasn't passed (e.g. brand new message), use the current time
+  const msgTime = ts ? ts : new Date().toISOString();
+  timeDiv.innerText = formatDateTime(msgTime);
+  wrapper.appendChild(timeDiv);
+
+  inner.appendChild(ava);
+  inner.appendChild(wrapper);
+  row.appendChild(inner);
+  elChat.appendChild(row);
+
+  updateInputPosition();
+  scrollToBottom();
+}
+
+// ------------------------------------------
+// LOAD SESSION FROM BACKEND
+// ------------------------------------------
+async function loadSession(sessionId) {
+  try {
+    const res = await fetch(`/session/${sessionId}`, {
+      credentials: "same-origin"
+    });
+    const data = await res.json();
+
+    clearChat();
+    SESSION_ID = sessionId;
+    CURRENT_TITLE = data.title || "New Chat";
+    sessionStorage.setItem("chat_session_id", SESSION_ID);
+
+    if (data.messages && data.messages.length > 0) {
+      data.messages.forEach((m, index) => {
+        
+        //  THE MAGIC TRICK: Hides the greeting if it's already saved in your database!
+        if (index === 0 && m.role === "assistant" && m.content.includes("I can help you with general questions")) {
+          return; // Skips drawing this bubble
+        }
+
+        if(m.file){
+          addMsg(m.role, m.content, m.file, m.ts, m.generation_time);
+        } else {
+          addMsg(m.role, m.content, null, m.ts);
+        }
+      });
+    }
+
+  } catch (e) {
+    console.error("Failed to load session", e);
+  }
+}
+
+// ------------------------------------------
+// LOADING INDICATORS (DYNAMIC)
+// ------------------------------------------
+function showLoading(text) {
+  removeLoading();
+  
+  const row = document.createElement("div");
+  row.className = "msg assistant temp-loading";
+  row.id = "loading-bubble";
+  
+  row.innerHTML = `
+    <div class="msg-inner">
+      <div class="avatar"><img src="/static/bot.png"></div>
+      <div class="bubble-wrapper">
+        <div class="bubble">${text}<span class="typing-dot">.</span><span class="typing-dot">.</span><span class="typing-dot">.</span></div>
+      </div>
+    </div>
+  `;
+  elChat.appendChild(row);
+}
+
+function removeLoading() {
+  const loader = document.getElementById("loading-bubble");
+  if (loader) loader.remove();
+}
+// ------------------------------------------
+// SEND MESSAGE
+// ------------------------------------------
+// let isLoading = false;
+
+// async function ask() {
+//   const text = elPrompt.value.trim();
+//   if (!text || isLoading) return;
+
+//   addMsg("user", text);
+//   elPrompt.value = "";
+//   elPrompt.style.height = "48px"; 
+//   isLoading = true;
+//   elSend.disabled = true;
+
+//   const lowerText = text.toLowerCase();
+
+//   try {
+//     let loading_str = await (await fetch("/define_loading", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ pinned: true })
+//       })).text();
+//     showLoading(loading_str);
+//     const res = await fetch("/chat", {
+//       method: "POST",
+//       credentials: "same-origin",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({
+//         message: text,
+//         session_id: SESSION_ID
+//       })
+//     });
+//     //  NEW: Check if Flask redirected us to the login page (session expired)
+//     if (res.redirected && res.url.includes("/login")) {
+//       window.location.href = "/login";
+//       return;
+//     }
+//     const data = await res.json();
+//     removeLoading();
+//     addMsg("assistant", data.answer || "…", data.file || null, data.ts || null, data.generation_time || null);
+
+//     // 👇 ----------------------------------------------------
+//     // 🧠 BACKEND-DRIVEN SMART TITLING
+//     // -------------------------------------------------------
+//     // If Python generated a new smart title, grab it and update the UI!
+//     if (data.new_title && data.new_title !== CURRENT_TITLE) {
+//         CURRENT_TITLE = data.new_title;
+//         renderHistory(); // Refresh the sidebar instantly
+//     }
+//     // -------------------------------------------------------
+
+//   } catch (err) {
+//     removeLoading();
+//     addMsg("assistant", `⚠️ ${err.message}`);
+//   }
+
+let isLoading = false;
+let loadingActive = true;
+let loadingController = null;
+
+async function ask() {
+  
+  let once_scroll_down = true; 
+  const text = elPrompt.value.trim();
+  if (!text || isLoading) return;
+
+  addMsg("user", text);
+  elPrompt.value = "";
+  elPrompt.style.height = "48px"; 
+  isLoading = true;
+  elSend.disabled = true;
+
+  // Start polling define_loading in a loop
+  loadingActive = true;
+  (async function pollLoading() {
+    while (loadingActive) {
+      try {
+        loadingController = new AbortController();
+        const loading_str = await (await fetch("/define_loading", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            pinned: true,
+            session_id: SESSION_ID
+          }),
+          signal: loadingController.signal
+        })).text();
+
+        if (!loadingActive) break;
+        showLoading(loading_str);
+        if (once_scroll_down) {
+          scrollToBottom();
+          once_scroll_down = false;
+        }
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("Loading fetch failed:", err);
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  })();
+
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: text,
+        session_id: SESSION_ID
+      })
+    });
+
+    if (res.redirected && res.url.includes("/login")) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const data = await res.json();
+
+    // stop loading loop immediately
+    loadingActive = false;
+    if (loadingController) loadingController.abort();
+    removeLoading();
+
+    addMsg("assistant", data.answer || "…", data.file || null, data.ts || null, data.generation_time || null);
+
+    if (data.new_title && data.new_title !== CURRENT_TITLE) {
+      CURRENT_TITLE = data.new_title;
+      renderHistory();
+    }
+
+  } catch (err) {
+    loadingActive = false;
+    if (loadingController) loadingController.abort();
+    removeLoading();
+    addMsg("assistant", `⚠️ ${err.message}`);
+  }
+
+  isLoading = false;
+  elSend.disabled = false;
+}
+
+
+
+// ------------------------------------------
+// EVENTS
+// ------------------------------------------
+elSend.onclick = ask;
+
+//  NEW: Auto-resize the text area as the user types (Copilot Style)
+elPrompt.addEventListener("input", function() {
+  // 1. Instantly shrink back to default (48px) so we can calculate the new size
+  this.style.height = "48px"; 
+  // 2. Expand exactly to the new scroll height of the text you just typed
+  this.style.height = this.scrollHeight + "px"; 
+});
+
+//  THE FIX: Automatically shrink the chat stage when the input box grows!
+new ResizeObserver(() => {
+  const dock = document.querySelector('.dock');
+  const stage = document.querySelector('.stage');
+  
+  // Only resize the chat window if we are actively chatting (not on the centered home screen)
+  if (stage && dock && !document.body.classList.contains('centered-dock')) {
+      // Dynamically subtract the Header (52px) and the exact height of the expanding Dock
+      stage.style.setProperty('height', `calc(100vh - 52px - ${dock.offsetHeight}px)`, 'important');
+      
+      // Push the conversation up so the latest message stays perfectly visible!
+      scrollToBottom(); 
+  }
+}).observe(document.querySelector('.dock'));
+
+elPrompt.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    ask();
+  }
+});
+
+//  ADD THIS NEW FIX HERE (Don't delete anything else!)
+elPrompt.addEventListener("input", () => {
+  elPrompt.style.height = "auto"; // Reset height to calculate the new size
+  elPrompt.style.height = elPrompt.scrollHeight + "px"; // Expand to fit text
+});
+
+/**
+ * Updated New Chat Logic (Lazy Creation)
+ * 1. Generates an ID locally.
+ * 2. Does NOT hit the backend until the user types a message.
+ */
+elNewChat.onclick = () => {
+  clearChat();
+  SESSION_ID = uuid();
+  sessionStorage.setItem("chat_session_id", SESSION_ID);
+  
+  // Reset our tracker for the new chat
+  CURRENT_TITLE = "New Chat";
+
+  // Update the URL without reloading
+  window.history.pushState({}, "", `/c/${SESSION_ID}`);
+  
+  
+
+  //  THE FIX: Clear the input box and reset its height
+  const promptInput = document.getElementById("prompt");
+  if (promptInput) {
+      promptInput.value = "";
+      promptInput.style.height = "48px"; 
+  }
+};
+
+
+// ------------------------------------------
+// HISTORY DRAWER (SERVER-SIDE)
+// ------------------------------------------
+const drawer = document.getElementById("historyDrawer");
+const historyList = document.getElementById("historyList");
+const closeHistoryBtn = document.getElementById("closeHistory");
+
+elHistoryBtn.onclick = () => {
+  drawer.classList.add("open");
+  renderHistory();
+};
+
+closeHistoryBtn.onclick = () => {
+  drawer.classList.remove("open");
+};
+
+//  NEW FIX: Close the history drawer if the user clicks outside of it
+document.addEventListener("click", (e) => {
+  // Check if the drawer is currently open
+  if (drawer.classList.contains("open")) {
+    // If the click was NOT inside the drawer, AND NOT on the history button itself...
+    if (!drawer.contains(e.target) && !elHistoryBtn.contains(e.target)) {
+      drawer.classList.remove("open"); // ...close it!
+    }
+  }
+});
+
+async function renderHistory() {
+  historyList.innerHTML = "";
+
+  try {
+    const res = await fetch("/sessions", {
+      credentials: "same-origin"
+    });
+    const sessions = await res.json();
+
+    // (Removed the code that forcefully injected the empty "New Chat")
+
+    if (!sessions.length) {
+      historyList.innerHTML =
+        "<div style='padding:12px;color:#666'>No chats yet</div>";
+      return;
+    }
+
+    sessions.forEach(h => {
+      const row = document.createElement("div");
+      row.className = "history-item";
+      if (h.pinned) row.classList.add("pinned");
+
+      //  Highlight the active chat (if it actually exists in the database)
+      if (h.session_id === SESSION_ID) {
+        row.classList.add("active-chat");
+      }
+
+      const titleWrap = document.createElement("div");
+      titleWrap.className = "history-title-wrap";
+
+      const title = document.createElement("div");
+      title.className = "history-title";
+      if (h.pinned) {
+        title.innerHTML = "📌 " + (h.title || "Pinned Chat");
+      } else {
+        title.textContent = h.title || "New Chat";
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "history-meta";
+      meta.textContent = formatDateTime(h.created_at);
+
+      titleWrap.append(title, meta);
+
+      const menuBtn = document.createElement("div");
+      menuBtn.className = "history-menu-btn";
+      menuBtn.innerHTML = "⋮";
+
+      const menu = document.createElement("div");
+      menu.className = "history-menu";
+
+      //  Rename
+      const rename = document.createElement("div");
+      rename.innerHTML = "✏️ Rename";
+      rename.onclick = async e => {
+        e.stopPropagation();
+        const newTitle = prompt("Rename chat", h.title || "New Chat");
+        if (!newTitle) return;
+
+        await fetch(`/sessions/${h.session_id}/rename`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: newTitle })
+        });
+
+        if (h.session_id === SESSION_ID) {
+            CURRENT_TITLE = newTitle;
+        }
+
+        renderHistory();
+      };
+
+      // 📌 Pin / Unpin
+      const pin = document.createElement("div");
+      pin.innerHTML = h.pinned ? "📌 Unpin" : "📌 Pin";
+      pin.onclick = async e => {
+        e.stopPropagation();
+        await fetch(`/sessions/${h.session_id}/pin`, {
+          method: "POST",
+          credentials: "same-origin"
+        });
+        renderHistory();
+      };
+
+      // 🗑️ Delete
+      const del = document.createElement("div");
+      del.innerHTML = "🗑️ Delete";
+      del.onclick = async e => {
+        e.stopPropagation();
+        if (!confirm("Delete this chat?")) return;
+        await fetch(`/sessions/${h.session_id}`, {
+          method: "DELETE",
+          credentials: "same-origin"
+        });
+        
+        // If we deleted the active chat, start a fresh one!
+        if (h.session_id === SESSION_ID) {
+            elNewChat.click();
+        } else {
+            renderHistory();
+        }
+      };
+
+      menu.append(rename, pin, del);
+
+      menuBtn.onclick = e => {
+        e.stopPropagation();
+        document
+          .querySelectorAll(".history-menu.open")
+          .forEach(m => m.classList.remove("open"));
+        menu.classList.toggle("open");
+      };
+
+      row.onclick = () => {
+        drawer.classList.remove("open");
+        
+        window.history.pushState({}, "", `/c/${h.session_id}`);
+        loadSession(h.session_id);
+      };
+
+      row.append(titleWrap, menuBtn, menu);
+      historyList.appendChild(row);
+    });
+
+  } catch (err) {
+    console.error(err);
+    historyList.innerHTML =
+      "<div style='padding:12px;color:red'>Failed to load history</div>";
+  }
+}
+
+// ------------------------------------------
+// PROFILE DROPDOWN
+// ------------------------------------------
+const profileBtn = document.getElementById("profileBtn");
+const profileMenu = document.getElementById("profileMenu");
+const profileWrapper = document.querySelector(".profile-wrapper");
+
+profileBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  profileMenu.classList.toggle("open");
+});
+
+profileMenu.addEventListener("click", e => e.stopPropagation());
+
+document.addEventListener("click", e => {
+  if (!profileWrapper.contains(e.target)) {
+    profileMenu.classList.remove("open");
+  }
+});
+
+// ------------------------------------------
+// 3a: URL ROUTER (NEW & UPDATED)
+// ------------------------------------------
+window.addEventListener('DOMContentLoaded', async () => {
+  setCopilotGreeting(); 
+
+  const currentPath = window.location.pathname;
+  
+  if (currentPath.startsWith('/c/')) {
+    const urlSessionId = currentPath.split('/')[2];
+    if (urlSessionId) {
+      //  THE FIX 1: Added 'await' so the app pauses here until the database responds
+      await loadSession(urlSessionId); 
+    }
+  } else {
+    SESSION_ID = uuid();
+    sessionStorage.setItem("chat_session_id", SESSION_ID);
+    CURRENT_TITLE = "New Chat";
+    clearChat();
+  
+    window.history.replaceState({}, "", `/c/${SESSION_ID}`);
+    renderHistory();
+  }
+
+  //  THE FIX 2: Now that everything is in the perfect position, fade the screen in!
+  document.body.style.opacity = "1";
+});
+
+// ------------------------------------------
+// AUTO LOGOUT (INACTIVITY TIMER)
+// ------------------------------------------
+let inactivityTimer;
+// Set to 2 minutes (120000 ms) for testing. Change to 1 hour (3600000 ms) later.
+const TIMEOUT_MS = 60 * 60 * 1000; 
+
+function resetInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    // Redirect to the backend logout route, which clears the session and goes to login
+    window.location.href = "/logout";
+  }, TIMEOUT_MS);
+}
+
+// Listen for standard user interactions to reset the timer
+window.addEventListener("mousemove", resetInactivityTimer);
+window.addEventListener("keydown", resetInactivityTimer);
+window.addEventListener("click", resetInactivityTimer);
+window.addEventListener("scroll", resetInactivityTimer);
+
+// Initialize the timer when the page loads
+resetInactivityTimer();
+
+// Ensure the HTML has loaded before fetching user profile
+window.addEventListener('DOMContentLoaded', () => {
+    fetchUserProfile();
+});
+
+//  NEW: Fetch the user's name from the backend and update the UI
+async function fetchUserProfile() {
+  try {
+    const response = await fetch('/api/profile');
+    if (response.ok) {
+      const data = await response.json();
+      
+      const nameElement = document.getElementById('profileNameDisplay');
+      const emailElement = document.getElementById('profileEmailDisplay');
+      
+      if (nameElement) nameElement.innerText = data.full_name;
+      //  NEW: Populate the email field
+      if (emailElement) emailElement.innerText = data.email; 
+      
+    }
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+  }
+}
