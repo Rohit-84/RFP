@@ -1,0 +1,109 @@
+# ---- Core Frameworks ----
+Flask==3.1.2
+waitress
+Werkzeug==3.1.3
+itsdangerous==2.2.0
+Jinja2==3.1.6
+click==8.3.0
+ 
+# ---- Azure Integrations ----
+azure-common==1.1.28
+azure-core==1.36.0
+azure-identity==1.25.1
+azure-search-documents==11.6.0
+ 
+# ---- LangChain / OpenAI ----
+langchain==0.3.27
+langchain-community==0.3.31
+langchain-core==0.3.79
+langchain-openai==0.3.35
+langchain-text-splitters==0.3.11
+langsmith==0.4.36
+openai==2.3.0
+tiktoken==0.12.0
+ 
+# ---- Data / Parsing ----
+pandas==2.3.3
+numpy==2.3.4
+regex==2025.9.18
+lxml==6.0.2
+beautifulsoup4==4.14.2
+soupsieve==2.8
+ 
+# ---- File Generation ----
+python-pptx==1.0.2
+python-docx==1.2.0
+PyPDF2==3.0.1
+reportlab==4.4.4
+xlsxwriter==3.2.9
+openpyxl==3.1.5
+pillow==12.0.0
+ 
+# ---- Microsoft / SharePoint ----
+msal==1.34.0
+msal-extensions==1.3.1
+requests==2.32.5
+ 
+# ---- Local Automation (Windows only) ----
+pywin32==311
+comtypes==1.4.13
+ 
+# ---- Lang utilities / misc ----
+pydantic==2.12.2
+pydantic_core==2.41.4
+pydantic-settings==2.11.0
+tenacity==9.1.2
+typing-extensions==4.15.0
+attrs==25.4.0
+marshmallow==3.26.1
+ 
+# ---- Task Scheduling / Utilities ----
+APScheduler==3.11.0
+tzlocal==5.3.1
+schedule
+pytz
+ 
+# ---- Networking / Async ----
+aiohttp==3.13.0
+aiosignal==1.4.0
+anyio==4.11.0
+httpx==0.28.1
+httpcore==1.0.9
+sniffio==1.3.1
+yarl==1.22.0
+idna==3.11
+certifi==2025.10.5
+urllib3==2.5.0
+ 
+# ---- Text / Similarity ----
+thefuzz==0.22.1
+RapidFuzz==3.14.1
+Levenshtein==0.27.1
+ 
+# ---- Serialization / Optimization ----
+orjson==3.11.3
+zstandard==0.25.0
+cffi==2.0.0
+cryptography==46.0.2
+ 
+# ---- Desktop GUI ----
+customtkinter==5.2.2
+ 
+# ---- Packaging ----
+pyinstaller==6.10.0
+ 
+# ---- Logging / Monitoring ----
+blinker==1.9.0
+tqdm==4.67.1
+colorama==0.4.6
+
+psutil==7.2.2
+spacy==3.8.11
+# IMPORTANT: After installing the requirements, you MUST run this command 
+# in your terminal to download the English language model for spacy:
+# python -m spacy download en_core_web_sm
+#AND...
+#pip install pytz schedule --upgrade
+
+# ---- OAuth Library ----
+authlib==1.6.9
