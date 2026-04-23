@@ -1,0 +1,745 @@
+/* =========================================
+   GLOBAL
+========================================= */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Inter", sans-serif;
+  background: #f7f7f8;
+}
+
+/* =========================================
+   HEADER
+========================================= */
+.hdr {
+  background: linear-gradient(
+    180deg,
+    #004a99 0%,
+    #003f88 100%
+  );
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 24px;
+  height: 52px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  flex-shrink: 0; 
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  height: 26px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* ===============================
+   TOP NAV BUTTONS (IMPROVED)
+================================ */
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  padding: 6px 14px;
+  border-radius: 20px;
+
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.nav-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.32);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+.nav-btn:active {
+  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* =========================================
+   EMOJI ICON VISIBILITY FIX
+========================================= */
+.nav-btn .nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 22px;
+
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+
+  font-size: 13px;
+  line-height: 1;
+
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+
+.nav-btn:hover .nav-icon {
+  background: #ffffff;
+}
+
+/* =========================================
+   CHAT AREA
+========================================= */
+.stage {
+  /* Exactly 100vh minus header (52px) and new dock height (127px) */
+  height: calc(100vh - 179px) !important; 
+  overflow-y: auto !important;
+  
+  /* Set bottom padding to 0px (Top 12, Right 40, Bottom 0, Left 40) */
+  padding: 12px 40px 0px 40px !important; 
+  scroll-behavior: smooth;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-x: hidden;
+  width: 100%; 
+  max-width: 100%; 
+}
+
+/* =========================================
+   MESSAGE ROWS
+========================================= */
+.msg {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+}
+
+.msg.assistant {
+  justify-content: flex-start;
+  padding-left: 30px;
+  padding-bottom: 20px;
+}
+
+.msg.user {
+  justify-content: flex-end;
+  padding-right: 30px;
+}
+
+.msg-inner {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.msg.user .msg-inner {
+  flex-direction: row-reverse;
+  padding-top: 10px;
+}
+
+/* =========================================
+   MESSAGE TIMESTAMP
+========================================= */
+.msg-time {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+  padding: 0 4px;
+  
+  /* Hide by default and add a smooth fade-in */
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  
+  /* Forces right alignment for ALL messages */
+  text-align: right; 
+}
+
+/* Show the timestamp when hovering anywhere over the message row */
+.msg:hover .msg-time {
+  opacity: 1;
+}
+
+/* =========================================
+   AVATARS
+========================================= */
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #004a99;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =========================================
+   BUBBLE
+========================================= */
+.bubble-wrapper {
+  position: relative;
+  max-width: 520px;
+}
+
+.bubble {
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  color: #1a1a1a;
+  font-size: 15px;
+  line-height: 1.25;
+  padding: 6px 12px;
+  white-space: normal; 
+  word-break: break-word;
+}
+
+.msg.assistant .bubble {
+  background: #e8f0ff;
+  border-color: #cddcff;
+}
+
+.msg.user .bubble {
+  color: #003f88;
+  white-space: pre-wrap; 
+}
+
+/* Reset all top margins inside bubbles to prevent stacking gaps */
+.bubble p, .bubble ul, .bubble ol, .bubble li, .bubble h1, .bubble h2, .bubble h3, .bubble h4 {
+  margin-top: 0 !important;
+}
+
+.bubble p {
+  margin-bottom: 8px !important;
+}
+
+.bubble p:empty {
+  display: none !important;
+}
+
+.bubble ul, .bubble ol {
+  margin-bottom: 8px !important;
+  padding-left: 24px !important; 
+}
+
+.bubble li > ul, .bubble li > ol {
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+}
+
+.bubble li {
+  margin-bottom: 8px !important; 
+}
+
+.bubble li p {
+  margin-bottom: 2px !important; 
+}
+
+.bubble li p:last-child {
+  margin-bottom: 0 !important;
+}
+
+.bubble > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* =========================================
+   COPY BUTTON
+========================================= */
+.copy-btn {
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.bubble-wrapper:hover .copy-btn {
+  opacity: 1;
+}
+
+/* =========================================
+   INPUT AREA
+========================================= */
+.dock {
+  padding: 10px 40px 16px;
+  display: flex;
+  justify-content: center; 
+}
+
+.dock-inner {
+  background: #ffffff;
+  border-radius: 32px;
+  padding: 24px;
+  display: flex;
+  gap: 12px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.05), 0 2px 6px rgba(0,0,0,0.03);
+  width: 100%;
+  max-width: 750px; 
+  min-height: 103px; 
+  align-items: flex-start;
+  position: relative; 
+  z-index: 10 !important; /* Ensures the chatbox itself sits on top */
+}
+
+#prompt {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 16px;
+    margin-top: 0;
+    font-family: "Inter", sans-serif;
+    height: 48px;
+    min-height: 48px;
+    max-height: 250px;
+    overflow-y: auto;
+    width: 100%;
+    padding-right: 52px !important; 
+    scrollbar-width: thin;
+    scrollbar-color: #cecece transparent;
+}
+
+/* Custom Floating Scroller for the Text Box */
+#prompt::-webkit-scrollbar {
+  width: 16px; 
+}
+#prompt::-webkit-scrollbar-track {
+    background: transparent;
+    margin-bottom: 48px !important; 
+}
+#prompt::-webkit-scrollbar-thumb {
+  background-color: #cecece; 
+  border-radius: 20px;
+  border: 5px solid #ffffff; 
+  background-clip: padding-box; 
+}
+#prompt::-webkit-scrollbar-thumb:hover {
+  background-color: #a8a8a8;
+}
+
+#send {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: #004a99;
+    color: #fff;
+    cursor: pointer;
+    position: absolute !important;
+    right: 12px !important; 
+    bottom: 24px !important; 
+    margin: 0 !important;
+    z-index: 15 !important;
+}
+
+/* =========================================
+   HISTORY DRAWER
+========================================= */
+.history-drawer {
+  position: fixed;
+  top: 52px;
+  right: -340px;
+  width: 340px;
+  height: calc(100vh - 52px);
+  background: #ffffff;
+  border-left: 1px solid #e0e0e0;
+  box-shadow: -4px 0 12px rgba(0,0,0,0.12);
+  transition: right 0.25s ease;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.history-drawer.open {
+  right: 0;
+  pointer-events: auto;
+}
+
+.history-header {
+  padding: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid #eee;
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.history-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+/* LONGER HISTORY TITLES */
+.history-title {
+  font-size: 14px;
+  color: #333;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+  line-height: 1.3;
+}
+
+.history-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.history-meta {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* Highlights the currently active chat in the sidebar */
+.history-item.active-chat {
+    background-color: #e6f0ff; 
+    border-left: 4px solid #0056b3; 
+}
+
+.history-item.active-chat:hover {
+    background-color: #dbeafe; 
+}
+
+/* =========================================
+   HISTORY MENU
+========================================= */
+.history-menu-btn {
+  opacity: 0;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.history-item:hover .history-menu-btn {
+  opacity: 1;
+}
+
+.history-menu {
+  position: absolute;
+  right: 10px;
+  top: 34px;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  width: 140px;
+  display: none;
+}
+
+.history-menu.open {
+  display: block;
+}
+
+.history-menu div {
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.history-menu div:hover {
+  background: #f3f4f6;
+}
+
+/* =========================================
+   PROFILE DROPDOWN
+========================================= */
+.profile-wrapper {
+  position: relative;
+}
+
+.profile-menu {
+  position: absolute;
+  right: 0;
+  top: 38px;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  width: 240px;
+  box-shadow: 0 4px 12px rgba(207, 156, 156, 0.15);
+  display: none;
+  z-index: 2000;
+}
+
+.profile-menu.open {
+  display: block;
+}
+
+.profile-menu div {
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #222;
+}
+
+.profile-menu div:hover {
+  background: #f3f4f6;
+}
+
+/* PROFILE DROPDOWN – ACTION BUTTONS */
+.profile-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin: 6px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #f5f7fb;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-action:hover {
+  background: #e9eefc;
+}
+
+.profile-action .action-icon {
+  font-size: 15px;
+}
+
+.profile-action.logout {
+  background: #fff5f5;
+  color: #b00020;
+}
+
+.profile-action.logout:hover {
+  background: #ffe3e3;
+}
+
+/* PROFILE DROPDOWN HEADER STYLING */
+.profile-menu .action-icon {
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 18px !important; 
+    min-width: 18px !important;
+    margin-right: 15px !important; 
+    font-size: 16px !important;
+    text-align: center !important;
+}
+
+.profile-header .action-icon {
+    margin-right: 2px !important; 
+}
+
+.profile-info {
+    display: flex !important;
+    flex-direction: column !important;
+    text-align: left !important;
+    line-height: 1.4 !important;
+    overflow: hidden !important;
+    flex: 1;
+}
+
+#profileNameDisplay {
+    font-weight: 600 !important;
+    color: #333 !important;
+    font-size: 14px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#profileEmailDisplay {
+    font-weight: 400 !important;
+    color: #777 !important;
+    font-size: 11px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* =========================================
+   PINNED CHAT
+========================================= */
+.history-item.pinned {
+  background: #eef4ff;
+  border-left: 4px solid #004a99;
+}
+
+.history-item .pin-indicator {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.history-item.pinned .history-title {
+  font-weight: 600;
+}
+
+/* =========================================
+   DOWNLOAD PPT BUTTON
+========================================= */
+.download-btn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: #004a99;
+  color: #fff;
+  border-radius: 16px;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.download-btn:hover {
+  background: #003366;
+}
+
+/* =========================================
+   LOADING ANIMATION
+========================================= */
+.typing-dot {
+  display: inline-block;
+  font-size: inherit; 
+  font-weight: bold;
+  color: #004a99;
+  margin-left: 1px;   
+  animation: typingWave 0.8s ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingWave {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-4px); /* Reduced bounce height to keep box tight */
+    opacity: 1;
+  }
+}
+
+/* =========================================
+   CENTERED INPUT BOX MODE (COPILOT STYLE)
+========================================= */
+body.centered-dock .stage {
+  display: none; 
+}
+
+body.centered-dock .dock {
+  height: calc(100vh - 52px); 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 15vh; 
+}
+
+h2.copilot-greeting {
+  display: none; 
+  width: 100%;
+  max-width: 750px; 
+  margin: 0 auto 24px auto; 
+  padding: 0 0 0 24px; 
+  text-align: left; 
+  font-size: 24px; 
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.5px; 
+}
+
+body.centered-dock h2.copilot-greeting {
+  display: block;
+}
+
+/* Standard Dock (When chatting at the bottom) */
+.dock {
+  position: fixed !important; 
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: auto !important; 
+  min-height: 127px !important; 
+  padding: 10px 0 24px 0 !important; 
+  background: #f7f7f8 !important; 
+  display: flex !important;
+  flex-direction: column !important; 
+  align-items: center !important; 
+  justify-content: flex-end !important;
+  z-index: 999 !important;
+}
+
+/* Centered Dock (Overrides the above ONLY on the Home Screen) */
+body.centered-dock .dock {
+  position: relative !important; 
+  height: calc(100vh - 52px) !important; 
+  padding-bottom: 15vh !important;
+  justify-content: center !important; 
+  align-items: center !important;
+}
+
+/* =========================================
+   DOCK SPACING FIXES
+========================================= */
+
+/* ACTIVE CHAT SCREEN: Tightened spacing for a more compact look */
+body:not(.centered-dock) .dock {
+    padding-bottom: 16px !important; 
+}
