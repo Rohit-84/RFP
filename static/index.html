@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" type="image/png" sizes="32x32" href="TabLogoL&T.png">
+  <link rel="icon" type="image/x-icon" href="/static/TabLogoL&T.png">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Deck Genie</title>
+
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+</head>
+
+<body style="opacity: 0; transition: opacity 0.15s ease-in;">
+
+  <header class="hdr">
+    <div class="brand">
+      <img src="/static/logo.png" alt="LTTS Logo" class="logo" />
+      <h1 class="title">Deck Genie</h1>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="nav-btn" id="newChatBtn">
+        <span class="nav-icon">➕</span>
+        <span>New Chat</span>
+      </button>
+
+      <button class="nav-btn" id="historyBtn">
+        <span class="nav-icon">🕘</span>
+        <span>History</span>
+      </button>
+
+      <div class="profile-wrapper">
+        <button class="nav-btn" id="profileBtn">
+          <span class="nav-icon">👤</span>
+          <span>Profile ▾</span>
+        </button>
+
+        <div class="profile-menu" id="profileMenu">
+          <div class="profile-action profile-header">
+            <span class="action-icon">👤</span>
+            <div class="profile-info">
+              <span id="profileNameDisplay">Loading...</span>
+              <span id="profileEmailDisplay">...</span>
+            </div>
+          </div>
+
+          <div class="profile-action" onclick="window.location.href='/change-password'">
+            <span class="action-icon">🔒</span>
+            <span>Change Password</span>
+          </div>
+
+          <div class="profile-action logout" onclick="window.location.href='/logout'">
+            <span class="action-icon">🚪</span>
+            <span>Logout</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div id="chat" class="chat"></div>
+  </main>
+
+  <div class="dock">
+    <h2 id="copilotGreeting" class="copilot-greeting"></h2>
+
+    <div class="dock-inner">
+      <textarea id="prompt" rows="1" placeholder="Type your message..."></textarea>
+      <button id="send">➤</button>
+    </div>
+  </div>
+
+  <aside id="historyDrawer" class="history-drawer">
+    <div class="history-header">
+      <span>Chat History</span>
+      <button id="closeHistory">✕</button>
+    </div>
+    <div id="historyList" class="history-list"></div>
+  </aside>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

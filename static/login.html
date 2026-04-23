@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" sizes="32x32" href="TabLogoL&T.png">
+  <link rel="icon" type="image/x-icon" href="/static/TabLogoL&T.png">
+  <title>Deck Genie Login</title>
+
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      background: #f7f7f8;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .box {
+      background: #fff;
+      padding: 28px;
+      border-radius: 12px;
+      width: 360px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.15);
+      text-align: center;
+    }
+
+    .logo {
+      width: 64px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      color: #004a99;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 16px;
+      padding: 10px;
+      border-radius: 20px;
+      border: none;
+      background: #004a99;
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    /* Modern Divider Line */
+    .divider {
+      margin: 20px 0;
+      color: #999;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      text-transform: uppercase;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      border-bottom: 1px solid #eee;
+    }
+    .divider::before { margin-right: 10px; }
+    .divider::after { margin-left: 10px; }
+
+    /* Styles for the Cancel Button */
+    .cancel-btn {
+      background: transparent;
+      border: 1px solid #004a99;
+      color: #004a99;
+      margin-top: 10px;
+    }
+    
+    .cancel-btn:hover {
+      background: #f1f5ff;
+    }
+
+    .forgot {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #004a99;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .error {
+      color: red;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    .success {
+      color: green;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    .footer {
+      margin-top: 22px;
+      font-size: 12px;
+      color: #777;
+    }
+
+     /* NEW: Revolving Circle CSS */
+    .loader {
+      border: 3px solid rgba(0, 74, 153, 0.2); /* Faded background track */
+      border-right: 3px solid #004a99; /* Solid colored revolving edge */
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* NEW: Hidden loading state */
+    .loading-state {
+      display: none;
+      margin-top: 16px;
+      color: #004a99;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="box">
+    <img src="/static/logo.png" class="logo" alt="Deck Genie Logo" />
+
+    <h2>Deck Genie</h2>
+    
+    <div id="loginView">
+      <form onsubmit="event.preventDefault();login();">
+        <input id="email" placeholder="Email ID" required/>
+        <input id="password" type="password" placeholder="Password" required />
+        <button type="submit">Login</button>
+      </form>
+          <div class="divider">Or</div>
+
+          <button type="button" onclick="window.location.href='/login/sso'" style="margin-top: 0;">
+          Sign in with Microsoft
+        </button>
+      <div class="forgot" onclick="toggleForgot()">
+        Forgot password?
+      </div>
+    </div>
+
+    <div id="forgotView" style="display: none;">
+      <form onsubmit="event.preventDefault(); sendReset();">
+        <input id="forgotEmail" placeholder="Enter your email ID" required />
+        <button type="submit">Reset Password</button>
+        <button type="button" class="cancel-btn" onclick="toggleForgot()">Cancel</button>
+      </form>
+      
+      <div id="loadingIndicator" class="loading-state">
+        <div class="loader"></div> Sending link to your mail id...
+      </div>
+
+      <div id="resetMsg" class="success"></div>
+    </div>
+
+    <div id="error" class="error"></div>
+
+    <div class="footer">
+      L&amp;T Technology Services
+    </div>
+  </div>
+
+<script>
+// 1. THIS CATCHES SSO ERRORS FROM THE URL
+window.onload = function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const errorMsg = urlParams.get('error');
+  if (errorMsg) {
+    document.getElementById('error').innerText = errorMsg;
+    window.history.replaceState({}, document.title, "/login");
+  }
+};
+
+// Helper function to check valid domains
+function isValidDomain(emailStr) {
+  const email = emailStr.trim().toLowerCase();
+  return email.endsWith("@ltts.com") || email.endsWith("@intelliswift.com");
+}
+
+// 2. THIS CATCHES MANUAL LOGIN ERRORS
+async function login() {
+  const email = document.getElementById('email');
+  const password = document.getElementById('password');
+  const error = document.getElementById('error');
+  error.innerText = "";   // clear old errors
+
+  if (!isValidDomain(email.value)) {
+    error.innerText = "Access restricted to @ltts.com and @intelliswift.com domains.";
+    return;
+  }
+
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: email.value,
+      password: password.value
+    })
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    localStorage.setItem("userEmail", email.value.trim());
+    window.location.href = "/";
+  } else {
+    // Catches the "Access Denied" text from app.py
+    error.innerText = data.error || "Login failed";
+  }
+}
+
+// UPDATED: Now toggles between the Login form and the Forgot Password form
+function toggleForgot() {
+  const error = document.getElementById('error');
+  const resetMsg = document.getElementById('resetMsg');
+  error.innerText = "";          
+  resetMsg.innerText = "";
+
+  const loginView = document.getElementById("loginView");
+  const forgotView = document.getElementById("forgotView");
+
+  if (loginView.style.display === "none") {
+    loginView.style.display = "block";
+    forgotView.style.display = "none";
+  } else {
+    loginView.style.display = "none";
+    forgotView.style.display = "block";
+  }
+}
+
+// 3. THIS CATCHES FORGOT PASSWORD ERRORS
+async function sendReset() {
+  const error = document.getElementById('error');
+  const forgotEmail = document.getElementById('forgotEmail');
+  const resetMsg = document.getElementById('resetMsg');
+  
+  //  RESTORED: Grab the loading indicator and the buttons
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const buttons = document.querySelectorAll('#forgotView button');
+  
+  error.innerText = "";          
+  resetMsg.innerText = "";       
+  resetMsg.className = "success"; 
+
+  if (!isValidDomain(forgotEmail.value)) {
+    error.innerText = "Please enter a valid @ltts.com or @intelliswift.com email address.";
+    return;
+  }
+
+  //  RESTORED: Show spinner, hide buttons to prevent double click
+  buttons.forEach(btn => btn.style.display = "none");
+  loadingIndicator.style.display = "block";
+
+  const res = await fetch("/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: forgotEmail.value })
+  });
+
+  const data = await res.json();
+  
+  //  RESTORED: Hide spinner, show buttons again after server responds
+  loadingIndicator.style.display = "none";
+  buttons.forEach(btn => btn.style.display = "block");
+
+  if (!res.ok) {
+    // Backend rejected the email (User not found)
+    resetMsg.className = "error"; 
+    resetMsg.innerText = data.error || "An error occurred.";
+  } else {
+    // Backend approved it
+    resetMsg.className = "success"; 
+    resetMsg.innerText = data.message || "Reset link has been sent to your email ID";
+  }
+}
+</script>
+
+</body>
+</html>
